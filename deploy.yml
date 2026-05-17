@@ -1,4 +1,4 @@
-name: Deploy to EC2
+name: Deploy
 
 on:
   push:
@@ -10,8 +10,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+    - uses: actions/checkout@v3
 
-    - name: Deploy
-      run: echo "Deploying..."
+    - name: SSH Deploy
+      uses: appleboy/ssh-action@master
+
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+
+        script: |
+          cd /home/ubuntu/aws-devops-project
+          git pull
+          docker stop mycontainer || true
+          docker rm mycontainer || true
+          docker build -t myapp .
+          docker run -d --name mycontainer -p 8000:80 myapp
